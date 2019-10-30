@@ -392,15 +392,12 @@ End Sub
 Private Sub NewRndCubes()
     Dim i As Integer
     Dim Cube0_X As Integer, Cube0_Y As Integer
-    Dim mDirection As CubesDirection
     '初始方向
     NewCubes_Direction = UpDirection
     '得到形状
     Randomize
     NewCubes_Mode = Int(Rnd * 7)
-    '确定方块坐标及方向
-    Randomize
-    mDirection = Int(Rnd * 4)
+    NewCubes_Direction = UpDirection
     '确定初始坐标
     Cube0_X = 5
     Cube0_Y = 0
@@ -415,7 +412,6 @@ Private Sub NewRndCubes()
             NewCubes_X(3) = Cube0_X + 1
             NewCubes_Y(3) = Cube0_Y + 1
         Case LineMode
-            '确定up型方块
                 NewCubes_X(0) = Cube0_X
                 NewCubes_Y(0) = Cube0_Y
                 NewCubes_X(1) = Cube0_X + 1
@@ -424,14 +420,6 @@ Private Sub NewRndCubes()
                 NewCubes_Y(2) = Cube0_Y
                 NewCubes_X(3) = Cube0_X + 3
                 NewCubes_Y(3) = Cube0_Y
-            If mDirection = UpDirection Or mDirection = DownDirection Then
-                '无需旋转
-            ElseIf mDirection = LeftDirection Or mDirection = RightDirection Then
-                '一次旋转，变换形态
-                Call rotateNewCubes
-            Else
-                MsgBox "随机数可能算错了！", vbCritical, "错误"
-            End If
         Case LeftZMode
                 NewCubes_X(0) = Cube0_X
                 NewCubes_Y(0) = Cube0_Y
@@ -441,13 +429,6 @@ Private Sub NewRndCubes()
                 NewCubes_Y(2) = Cube0_Y + 1
                 NewCubes_X(3) = Cube0_X + 2
                 NewCubes_Y(3) = Cube0_Y + 1
-            If mDirection = UpDirection Or mDirection = DownDirection Then
-                'up
-            ElseIf mDirection = LeftDirection Or mDirection = RightDirection Then
-                Call rotateNewCubes
-            Else
-                MsgBox "随机数可能算错了！", vbCritical, "错误"
-            End If
         Case RightZMode
                 NewCubes_X(0) = Cube0_X
                 NewCubes_Y(0) = Cube0_Y
@@ -457,13 +438,6 @@ Private Sub NewRndCubes()
                 NewCubes_Y(2) = Cube0_Y + 1
                 NewCubes_X(3) = Cube0_X - 2
                 NewCubes_Y(3) = Cube0_Y + 1
-            If mDirection = UpDirection Or mDirection = DownDirection Then
-                'up
-            ElseIf mDirection = LeftDirection Or mDirection = RightDirection Then
-                Call rotateNewCubes
-            Else
-                MsgBox "随机数可能算错了！", vbCritical, "错误"
-            End If
         Case TMode
                 NewCubes_X(0) = Cube0_X
                 NewCubes_Y(0) = Cube0_Y
@@ -473,19 +447,6 @@ Private Sub NewRndCubes()
                 NewCubes_Y(2) = Cube0_Y + 1
                 NewCubes_X(3) = Cube0_X + 1
                 NewCubes_Y(3) = Cube0_Y + 1
-            If mDirection = UpDirection Then
-                'up
-            ElseIf mDirection = RightDirection Then
-                Call rotateNewCubes
-            ElseIf mDirection = DownDirection Then
-                Call rotateNewCubes
-                Call rotateNewCubes
-            ElseIf mDirection = LeftDirection Then
-                Call rotateNewCubes
-                Call rotateNewCubes
-                Call rotateNewCubes
-            End If
-            'Debug.Print "TMode direction : mode", newCubes_Direction, newCubes_Mode
         Case LeftSevenMode
                 NewCubes_X(0) = Cube0_X
                 NewCubes_Y(0) = Cube0_Y
@@ -495,18 +456,6 @@ Private Sub NewRndCubes()
                 NewCubes_Y(2) = Cube0_Y + 1
                 NewCubes_X(3) = Cube0_X - 2
                 NewCubes_Y(3) = Cube0_Y + 1
-                If mDirection = UpDirection Then
-                    'up
-                ElseIf mDirection = RightDirection Then
-                    Call rotateNewCubes
-                ElseIf mDirection = DownDirection Then
-                    Call rotateNewCubes
-                    Call rotateNewCubes 'down 由up 经过两次变换得到
-                ElseIf mDirection = LeftDirection Then
-                    Call rotateNewCubes
-                    Call rotateNewCubes
-                    Call rotateNewCubes 'left三次变换得到
-                End If
         Case RightSevenMode
                 NewCubes_X(0) = Cube0_X
                 NewCubes_Y(0) = Cube0_Y
@@ -516,18 +465,6 @@ Private Sub NewRndCubes()
                 NewCubes_Y(2) = Cube0_Y + 1
                 NewCubes_X(3) = Cube0_X + 2
                 NewCubes_Y(3) = Cube0_Y + 1
-                If mDirection = UpDirection Then
-                    'up
-                ElseIf mDirection = RightDirection Then
-                    Call rotateNewCubes
-                ElseIf mDirection = DownDirection Then
-                    Call rotateNewCubes
-                    Call rotateNewCubes 'down 由up 经过两次变换得到
-                ElseIf mDirection = LeftDirection Then
-                    Call rotateNewCubes
-                    Call rotateNewCubes
-                    Call rotateNewCubes 'left三次变换得到
-                End If
     End Select
 End Sub
 
@@ -589,7 +526,7 @@ End Sub
 Private Sub ShowNextCubes()
     Dim i As Integer
     For i = 0 To 3
-        NextCubes_X(i) = NewCubes_X(i) + 7
+        NextCubes_X(i) = NewCubes_X(i) + 8
         NextCubes_Y(i) = NewCubes_Y(i) + 2
     Next
     NextCubes_Mode = NewCubes_Mode
@@ -603,7 +540,7 @@ Private Sub NextToCurrent()
     '位置的话需要移动至最顶部和最中央
     For i = 0 To 3
         NowCubes_X(i) = NextCubes_X(i) - 9
-        NowCubes_Y(i) = NextCubes_Y(i)
+        NowCubes_Y(i) = NextCubes_Y(i) - 2
     Next i
 End Sub
 '硬降实现
