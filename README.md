@@ -1,7 +1,7 @@
 <h1>tetris</h1>
-<pre>
  VB6 visual basic 6.0 俄罗斯方块 tetris
-<strong>操作按键</strong>
+<h3>操作按键</h3>
+<pre>
 开始    鼠标左键
 暂停    鼠标右键
 左      键盘左/A
@@ -10,7 +10,7 @@
 硬降    C
 逆旋转  空格键/Z
 顺旋转  X
-如果有什么建议，可以给我留言^.^
+<text style="color=#1E90FF">如果有什么建议，可以给我留言^.^</text>
  </pre>
  <h3>2019-10-31 加入踢墙系统</h3>
  <pre>
