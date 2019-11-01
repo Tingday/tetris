@@ -4,15 +4,15 @@ Begin VB.Form frmMain
    BackColor       =   &H00FFFFFF&
    BorderStyle     =   1  'Fixed Single
    Caption         =   "tetris"
-   ClientHeight    =   4215
+   ClientHeight    =   7935
    ClientLeft      =   45
    ClientTop       =   390
-   ClientWidth     =   3150
+   ClientWidth     =   4710
    LinkTopic       =   "Form1"
    MaxButton       =   0   'False
-   ScaleHeight     =   281
+   ScaleHeight     =   529
    ScaleMode       =   3  'Pixel
-   ScaleWidth      =   210
+   ScaleWidth      =   314
 End
 Attribute VB_Name = "frmMain"
 Attribute VB_GlobalNameSpace = False
@@ -30,6 +30,9 @@ Const Cell = 30
 Const Action_Speed = 80 '这个是响应速度 单位是ms 也就是说Action_Speed毫秒后操作会进行到下一帧
 Const fps = 120 '60帧
 Const Game_Speed = 500
+'主题颜色
+Dim ForColor As Long
+Dim ThemeColor As Long
 '窗体
 Dim form_Width As Integer
 Dim form_Height As Integer
@@ -94,18 +97,14 @@ Private Enum CubesDirection
     RightDirection = 2
     LeftDirection = 3
 End Enum
-
 Private Sub Form_KeyUp(KeyCode As Integer, Shift As Integer)
     User_Action = "hold"
 End Sub
-
 '开始函数
 Private Sub Form_Load()
     '获得当前显示器参数
     TwipsPerPixelX = Screen.TwipsPerPixelX
     TwipsPerPixelY = Screen.TwipsPerPixelY
-    'Debug.Print TwipsPerPixelX, TwipsPerPixelY '显然本机为15
-    'game frame'15/24 ≈ 1/0.618 为黄金分割比例
     frame_Top = 1
     frame_Left = 1
     frame_Width = 10
@@ -117,8 +116,16 @@ Private Sub Form_Load()
     form_Top = 0
     form_Left = 0
     Me.Move Screen.Width / 3, form_Top, form_Width, form_Height
-    Me.ForeColor = vbBlack
     Me.DrawWidth = 2
+    '主题
+    ForColor = vbBlack
+    ThemeColor = vbWhite
+    Me.FontSize = 14
+    Me.Font = "微软雅黑"
+    Call GameInit
+End Sub
+'初始化游戏参数
+Private Sub GameInit()
     '初始化当前方块
     Call NewRndCubes
     Call ShowNowCubes
@@ -130,7 +137,14 @@ Private Sub Form_Load()
     '重置Blocks
     Call ResetBlocks
     '画
-    Call ReDrawUI
+    If ReDrawUI = True Then
+    '游戏提示
+    Me.CurrentX = form_Width / (2.5 * Cell)
+    Me.CurrentY = form_Height / Cell
+    Me.ForeColor = ForColor
+
+    Me.Print "按鼠标左键开始游戏"
+    End If
 End Sub
 '游戏循环
 Private Sub Game_Loop()
@@ -140,46 +154,42 @@ Private Sub Game_Loop()
     Dim Action_NewTime As Long
     Dim Draw_NowTime As Long
     Dim Draw_NewTime As Long
-    While DoEvents
-        If Game_State = "running" Then
-            '操作响应
-            Action_NewTime = timeGetTime()
-            If Action_NewTime - Action_NowTime >= Action_Speed Then
-                Action_NowTime = Action_NewTime
-                Call saveCubes
-                Call switchCubes(User_Action)
-                Call ShowShadowCubes
-            End If
-            '画面响应
-            Game_NewTime = timeGetTime()
-            If Game_NewTime - Game_NowTime >= Game_Speed Then
-                Game_NowTime = Game_NewTime
-                Call saveCubes
-                Call switchCubes("down")
-                Call ShowShadowCubes
-            End If
-            '画面刷新
-            Draw_NewTime = timeGetTime()
-            If Draw_NewTime - Draw_NowTime >= 1000 / fps Then
-                Draw_NowTime = Draw_NewTime
-                Call ReDrawUI
-            End If
-        ElseIf Game_State = "stop" Then
-            Exit Sub
+    While (DoEvents And Game_State = "running")
+        '操作响应
+        Action_NewTime = timeGetTime()
+        If Action_NewTime - Action_NowTime >= Action_Speed Then
+            Action_NowTime = Action_NewTime
+            Call saveCubes
+            Call switchCubes(User_Action)
+            Call ShowShadowCubes
         End If
-        Sleep 1
+        '画面刷新
+        Draw_NewTime = timeGetTime()
+        If Draw_NewTime - Draw_NowTime >= 1000 / fps Then
+            Draw_NowTime = Draw_NewTime
+            Call ReDrawUI
+        End If
+        '画面响应
+        Game_NewTime = timeGetTime()
+        If Game_NewTime - Game_NowTime >= Game_Speed Then
+            Game_NowTime = Game_NewTime
+            Call saveCubes
+            Call switchCubes("down")
+            Call ShowShadowCubes
+        End If
+    Sleep (1)
     Wend
 End Sub
 '重画界面
-Private Sub ReDrawUI()
-    'Me.Cls
-    Call DrawWhiteBackColor
+Private Function ReDrawUI() As Boolean
+    Call DrawCanvas
     Call DrawWall
+    Call DrawShadowCubes
     Call DrawBlocks
     Call DrawNextCubes
     Call DrawNowCubes
-    Call DrawShadowCubes
-End Sub
+    ReDrawUI = True
+End Function
 '达底判定
 Private Function HitButtom(ByVal CubesName As String) As Boolean
     Dim i As Integer
@@ -348,6 +358,17 @@ Private Sub LockCubes()
         Call MoveBlocksStatus(Row)
         '如果有消除那么就可以重新画了
     Wend
+    '死亡判断
+    If HitBlocks("nowcubes") = True Then
+        Call GameOver
+    End If
+End Sub
+
+'死亡宣告
+Private Sub GameOver()
+    Game_State = "stop"
+    MsgBox "你的得分：" & Score, vbOKOnly, "游戏结束"
+    Call GameInit
 End Sub
 '判断是否在框架内
 Private Function HitFrame() As String
@@ -412,49 +433,49 @@ Private Sub NewRndCubes()
             NewCubes_X(3) = Cube0_X + 1
             NewCubes_Y(3) = Cube0_Y + 1
         Case LineMode
-                NewCubes_X(0) = Cube0_X
+                NewCubes_X(0) = Cube0_X - 1
                 NewCubes_Y(0) = Cube0_Y
-                NewCubes_X(1) = Cube0_X + 1
+                NewCubes_X(1) = Cube0_X
                 NewCubes_Y(1) = Cube0_Y
-                NewCubes_X(2) = Cube0_X + 2
+                NewCubes_X(2) = Cube0_X + 1
                 NewCubes_Y(2) = Cube0_Y
-                NewCubes_X(3) = Cube0_X + 3
+                NewCubes_X(3) = Cube0_X + 2
                 NewCubes_Y(3) = Cube0_Y
         Case LeftZMode
-                NewCubes_X(0) = Cube0_X
+                NewCubes_X(0) = Cube0_X - 1
+                NewCubes_Y(0) = Cube0_Y
+                NewCubes_X(1) = Cube0_X
+                NewCubes_Y(1) = Cube0_Y
+                NewCubes_X(2) = Cube0_X
+                NewCubes_Y(2) = Cube0_Y + 1
+                NewCubes_X(3) = Cube0_X + 1
+                NewCubes_Y(3) = Cube0_Y + 1
+        Case RightZMode
+                NewCubes_X(0) = Cube0_X + 2
                 NewCubes_Y(0) = Cube0_Y
                 NewCubes_X(1) = Cube0_X + 1
                 NewCubes_Y(1) = Cube0_Y
                 NewCubes_X(2) = Cube0_X + 1
                 NewCubes_Y(2) = Cube0_Y + 1
-                NewCubes_X(3) = Cube0_X + 2
-                NewCubes_Y(3) = Cube0_Y + 1
-        Case RightZMode
-                NewCubes_X(0) = Cube0_X
-                NewCubes_Y(0) = Cube0_Y
-                NewCubes_X(1) = Cube0_X - 1
-                NewCubes_Y(1) = Cube0_Y
-                NewCubes_X(2) = Cube0_X - 1
-                NewCubes_Y(2) = Cube0_Y + 1
-                NewCubes_X(3) = Cube0_X - 2
+                NewCubes_X(3) = Cube0_X
                 NewCubes_Y(3) = Cube0_Y + 1
         Case TMode
-                NewCubes_X(0) = Cube0_X
+                NewCubes_X(0) = Cube0_X + 1
                 NewCubes_Y(0) = Cube0_Y
-                NewCubes_X(1) = Cube0_X
+                NewCubes_X(1) = Cube0_X + 1
                 NewCubes_Y(1) = Cube0_Y + 1
-                NewCubes_X(2) = Cube0_X - 1
+                NewCubes_X(2) = Cube0_X
                 NewCubes_Y(2) = Cube0_Y + 1
-                NewCubes_X(3) = Cube0_X + 1
+                NewCubes_X(3) = Cube0_X + 2
                 NewCubes_Y(3) = Cube0_Y + 1
         Case LeftSevenMode
-                NewCubes_X(0) = Cube0_X
+                NewCubes_X(0) = Cube0_X + 2
                 NewCubes_Y(0) = Cube0_Y
-                NewCubes_X(1) = Cube0_X
+                NewCubes_X(1) = Cube0_X + 2
                 NewCubes_Y(1) = Cube0_Y + 1
-                NewCubes_X(2) = Cube0_X - 1
+                NewCubes_X(2) = Cube0_X + 1
                 NewCubes_Y(2) = Cube0_Y + 1
-                NewCubes_X(3) = Cube0_X - 2
+                NewCubes_X(3) = Cube0_X
                 NewCubes_Y(3) = Cube0_Y + 1
         Case RightSevenMode
                 NewCubes_X(0) = Cube0_X
@@ -526,7 +547,7 @@ End Sub
 Private Sub ShowNextCubes()
     Dim i As Integer
     For i = 0 To 3
-        NextCubes_X(i) = NewCubes_X(i) + 8
+        NextCubes_X(i) = NewCubes_X(i) + 7
         NextCubes_Y(i) = NewCubes_Y(i) + 2
     Next
     NextCubes_Mode = NewCubes_Mode
@@ -539,7 +560,7 @@ Private Sub NextToCurrent()
     NowCubes_Direction = NextCubes_Direction
     '位置的话需要移动至最顶部和最中央
     For i = 0 To 3
-        NowCubes_X(i) = NextCubes_X(i) - 9
+        NowCubes_X(i) = NextCubes_X(i) - 7
         NowCubes_Y(i) = NextCubes_Y(i) - 2
     Next i
 End Sub
@@ -586,9 +607,9 @@ Private Sub DrawBlocks()
         End If
     Next
 End Sub
-'画白色背景
-Private Sub DrawWhiteBackColor()
-    Me.Line (form_Left, form_Top)-(form_Width, form_Height), vbWhite, BF
+'画背景
+Private Sub DrawCanvas()
+    Me.Line (form_Left, form_Top)-(form_Width, form_Height), ThemeColor, BF
 End Sub
 '画边框及其它
 Private Sub DrawWall()
@@ -599,7 +620,7 @@ Private Sub DrawWall()
     X2 = frame_Width * Cell + Cell
     Y2 = frame_Height * Cell + Cell
     '墙体
-    Me.Line (X1, Y1)-(X2, Y2), vbBlack, B
+    Me.Line (X1, Y1)-(X2, Y2), ForColor, B
 End Sub
 '旋转方块
 Private Function rotateCubes() As Boolean
@@ -959,7 +980,7 @@ Private Sub DrawShadowCubes()
         X2 = X1 + Cell
         Y1 = ShadowCubes_Y(i) * Cell
         Y2 = Y1 + Cell
-        Me.Line (X1, Y1)-(X2, Y2), RGB(0, 191, 255), B
+        Me.Line (X1, Y1)-(X2, Y2), NowCubesColor, B
     Next
 End Sub
 '获得当前方块的颜色
@@ -1011,7 +1032,7 @@ Private Function ClsCell(ByVal Cell_X As Integer, ByVal Cell_Y As Integer)
     X2 = X1 + Cell
     Y1 = Cell_Y * Cell
     Y2 = Y1 + Cell
-    Me.Line (X1, Y1)-(X2, Y2), vbWhite, BF
+    Me.Line (X1, Y1)-(X2, Y2), ThemeColor, BF
 End Function
 '画细胞
 Private Function DrawCell(ByVal Cell_X As Integer, ByVal Cell_Y As Integer, cellColor As Long)
@@ -1023,7 +1044,7 @@ Private Function DrawCell(ByVal Cell_X As Integer, ByVal Cell_Y As Integer, cell
     'Debug.Print x1, x2, y1, y2, frame_Width, frame_Height
     '画之前判断是否在frame内
     Me.Line (X1, Y1)-(X2, Y2), cellColor, BF
-    Me.Line (X1, Y1)-(X2, Y2), vbBlack, B
+    Me.Line (X1, Y1)-(X2, Y2), ForColor, B
 End Function
 '把新Cubes展示出来
 Private Sub DrawNewCubes()
@@ -1039,7 +1060,7 @@ Private Sub Form_MouseDown(Button As Integer, Shift As Integer, X As Single, Y A
         Call Game_Loop
     Else
         Game_State = "stop"
-        Call DrawWhiteBackColor
+        Call DrawCanvas
     End If
 End Sub
 Private Sub Form_Unload(Cancel As Integer)
