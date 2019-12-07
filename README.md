@@ -11,6 +11,7 @@ VB6 visual basic 6.0 俄罗斯方块 tetris
 逆旋转  空格键/Z
 顺旋转  X
 <b>如果有什么建议，可以给我留言^.^</b>
+https://tetris.fandom.com/wiki/Tetris_Wiki
 </pre>
 <h3>2019-11-01 优化界面</h3>
 <pre>
