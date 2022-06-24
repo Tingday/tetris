@@ -5,9 +5,10 @@ Begin VB.Form frmMain
    BorderStyle     =   1  'Fixed Single
    Caption         =   "tetris"
    ClientHeight    =   7935
-   ClientLeft      =   45
-   ClientTop       =   390
+   ClientLeft      =   11295
+   ClientTop       =   1335
    ClientWidth     =   4710
+   Icon            =   "frmMain.frx":0000
    LinkTopic       =   "Form1"
    MaxButton       =   0   'False
    ScaleHeight     =   529
@@ -45,10 +46,7 @@ Dim frame_Top As Integer
 Dim frame_Left As Integer
 Dim TwipsPerPixelX As Long '像素和缇转换变量 不同显示器不一样
 Dim TwipsPerPixelY As Long
-'计分器
-Dim Score As Long '给出长整型
-Dim User_Action As String 'left right down change
-Dim Game_State As String ' running /pause /stop /dead
+
 '当前方块
 Dim NowCubes_X(3) As Integer
 Dim NowCubes_Y(3) As Integer
@@ -72,8 +70,17 @@ Dim NewCubes_Direction As CubesDirection
 '影子方块
 Dim ShadowCubes_X(3) As Integer
 Dim ShadowCubes_Y(3) As Integer
-Dim ShadowCubes_Mode As CubesDirection
+Dim ShadowCubes_Mode As CubesMode
 Dim ShadowCubes_Direction As CubesDirection
+Dim ShadowCubes_cubeColor As Long
+'计分器
+Dim Score As Long '给出长整型
+Dim User_Action As String 'left right down change
+Dim Game_State As String ' running /pause /stop /dead
+Dim Score_X As Integer
+Dim Score_Y As Integer
+
+
 '挡板方块
 Const Blocks_MaxIndex = 199 '10 * 20
 Dim Blocks_X(Blocks_MaxIndex) As Integer
@@ -82,7 +89,7 @@ Dim Blocks_Status(Blocks_MaxIndex)  As Integer
 Dim Blocks_Color(Blocks_MaxIndex) As Long
 '形态枚举
 Private Enum CubesMode
-    LineMode = 1
+    linemode = 1
     CubeMode = 0
     LeftSevenMode = 2
     RightSevenMode = 3
@@ -111,17 +118,17 @@ Private Sub Form_Load()
     frame_Height = 20
     '初始化窗体
     Me.ScaleMode = 3
-    form_Width = (frame_Width + 6) * Cell * TwipsPerPixelX
+    form_Width = (frame_Width + 7) * Cell * TwipsPerPixelX
     form_Height = (frame_Height + 3) * Cell * TwipsPerPixelY
     form_Top = 0
     form_Left = 0
     Me.Move Screen.Width / 3, form_Top, form_Width, form_Height
     Me.DrawWidth = 2
+    '
     '主题
     ForColor = vbBlack
-    ThemeColor = vbWhite
+    ThemeColor = RGB(47, 79, 79)
     Me.FontSize = 14
-    Me.Font = "微软雅黑"
     Call GameInit
 End Sub
 '初始化游戏参数
@@ -142,7 +149,6 @@ Private Sub GameInit()
     Me.CurrentX = form_Width / (2.5 * Cell)
     Me.CurrentY = form_Height / Cell
     Me.ForeColor = ForColor
-
     Me.Print "按鼠标左键开始游戏"
     End If
 End Sub
@@ -188,6 +194,7 @@ Private Function ReDrawUI() As Boolean
     Call DrawBlocks
     Call DrawNextCubes
     Call DrawNowCubes
+    Call DrawScore
     ReDrawUI = True
 End Function
 '达底判定
@@ -385,14 +392,18 @@ Private Function HitFrame() As String
         End If
     Next
 End Function
+
 '控制台
 Private Sub Form_KeyDown(KeyCode As Integer, Shift As Integer)
     If Game_State = "running" Then
-        If KeyCode = vbKeyC Then '硬降
+        If KeyCode = vbKeySpace Then '硬降
             Call saveCubes
             Call DownIt
             Call LockCubes '直接锁定
-        ElseIf KeyCode = vbKeySpace Or KeyCode = vbKeyZ Then '逆时针旋转
+        ElseIf KeyCode = vbKeyEscape Or KeyCode = vbKeyPause Then '暂停
+            Game_State = "pause"
+            MsgBox "暂停", vbOKOnly
+        ElseIf KeyCode = vbKeyControl Or KeyCode = vbKeyZ Then  '逆时针旋转
             Call saveCubes
             Call rotateCubes '改变方向
         ElseIf KeyCode = vbKeyX Then '顺时针旋转
@@ -400,6 +411,8 @@ Private Sub Form_KeyDown(KeyCode As Integer, Shift As Integer)
             Call rotateCubes
             Call rotateCubes
             Call rotateCubes
+        ElseIf KeyCode = vbKeyShift Then 'hold
+        
         ElseIf KeyCode = vbKeyA Or KeyCode = vbKeyLeft Then
             User_Action = "left"
         ElseIf KeyCode = vbKeyD Or KeyCode = vbKeyRight Then
@@ -409,6 +422,7 @@ Private Sub Form_KeyDown(KeyCode As Integer, Shift As Integer)
         End If
     End If
 End Sub
+
 '随机产生Cubes
 Private Sub NewRndCubes()
     Dim i As Integer
@@ -432,23 +446,23 @@ Private Sub NewRndCubes()
             NewCubes_Y(2) = Cube0_Y + 1
             NewCubes_X(3) = Cube0_X + 1
             NewCubes_Y(3) = Cube0_Y + 1
-        Case LineMode
-                NewCubes_X(0) = Cube0_X - 1
+        Case linemode
+                NewCubes_X(0) = Cube0_X
                 NewCubes_Y(0) = Cube0_Y
-                NewCubes_X(1) = Cube0_X
+                NewCubes_X(1) = Cube0_X + 1
                 NewCubes_Y(1) = Cube0_Y
-                NewCubes_X(2) = Cube0_X + 1
+                NewCubes_X(2) = Cube0_X + 2
                 NewCubes_Y(2) = Cube0_Y
-                NewCubes_X(3) = Cube0_X + 2
+                NewCubes_X(3) = Cube0_X + 3
                 NewCubes_Y(3) = Cube0_Y
         Case LeftZMode
-                NewCubes_X(0) = Cube0_X - 1
+                NewCubes_X(0) = Cube0_X
                 NewCubes_Y(0) = Cube0_Y
-                NewCubes_X(1) = Cube0_X
+                NewCubes_X(1) = Cube0_X + 1
                 NewCubes_Y(1) = Cube0_Y
-                NewCubes_X(2) = Cube0_X
+                NewCubes_X(2) = Cube0_X + 1
                 NewCubes_Y(2) = Cube0_Y + 1
-                NewCubes_X(3) = Cube0_X + 1
+                NewCubes_X(3) = Cube0_X + 2
                 NewCubes_Y(3) = Cube0_Y + 1
         Case RightZMode
                 NewCubes_X(0) = Cube0_X + 2
@@ -509,6 +523,7 @@ Private Sub ShowNowCubes()
     NowCubes_Mode = NewCubes_Mode
     NowCubes_Direction = NewCubes_Direction
 End Sub
+
 '展示我的影子
 Private Sub ShowShadowCubes()
     Dim i As Integer
@@ -572,6 +587,7 @@ Private Sub DownIt()
         NowCubes_Y(i) = ShadowCubes_Y(i)
     Next
 End Sub
+
 '展示下一个方块
 Private Sub DrawNextCubes()
     Dim i As Integer
@@ -581,7 +597,7 @@ Private Sub DrawNextCubes()
     Select Case NextCubes_Mode
         Case CubeMode
             ModeColor = RGB(255, 174, 0) 'yellow
-        Case LineMode
+        Case linemode
             ModeColor = RGB(47, 155, 255) 'skyblue
         Case LeftZMode
             ModeColor = RGB(222, 41, 44) 'red
@@ -598,6 +614,7 @@ Private Sub DrawNextCubes()
         Call DrawCell(NextCubes_X(i), NextCubes_Y(i), ModeColor)
     Next
 End Sub
+
 '画出当前的Blocks，可视化就是这么简单
 Private Sub DrawBlocks()
     Dim i As Integer
@@ -628,7 +645,7 @@ Private Function rotateCubes() As Boolean
     Select Case NowCubes_Direction
     Case UpDirection
         Select Case NowCubes_Mode
-        Case LineMode 'linemode
+        Case linemode 'linemode
             NowCubes_Direction = LeftDirection
             NowCubes_X(0) = OldCubes_X(0) + 2
             NowCubes_Y(0) = OldCubes_Y(0) - 2
@@ -706,7 +723,7 @@ Private Function rotateCubes() As Boolean
         End Select
     Case LeftDirection
         Select Case NowCubes_Mode
-            Case LineMode
+            Case linemode
                 NowCubes_Direction = UpDirection
                 NowCubes_X(0) = OldCubes_X(0) - 2
                 NowCubes_Y(0) = OldCubes_Y(0) + 2
@@ -808,7 +825,7 @@ Private Function rotateNewCubes() As Boolean
     Select Case NewCubes_Direction
     Case UpDirection
         Select Case NewCubes_Mode
-        Case LineMode 'linemode只有两种 up left
+        Case linemode 'linemode只有两种 up left
             NewCubes_Direction = LeftDirection
             NewCubes_X(0) = NewCubes_X(0) + 2
             NewCubes_Y(0) = NewCubes_Y(0) - 2
@@ -886,7 +903,7 @@ Private Function rotateNewCubes() As Boolean
         End Select
     Case LeftDirection
         Select Case NewCubes_Mode
-            Case LineMode
+            Case linemode
                 NewCubes_Direction = UpDirection  '上 右 下 左
                 NewCubes_X(0) = NewCubes_X(0) - 2
                 NewCubes_Y(0) = NewCubes_Y(0) + 2
@@ -975,21 +992,48 @@ End Function
 Private Sub DrawShadowCubes()
     Dim X1 As Integer, X2 As Integer, Y1 As Integer, Y2 As Integer
     Dim i As Integer
+    Select Case ShadowCubes_Mode
+        Case CubeMode
+            ShadowCubes_cubeColor = RGB(253, 245, 230)  'OldLace
+        Case linemode
+            ShadowCubes_cubeColor = RGB(122, 197, 205)     'skyblue
+        Case LeftZMode
+            ShadowCubes_cubeColor = RGB(255, 193, 193) 'red
+        Case RightZMode
+            ShadowCubes_cubeColor = RGB(11, 171, 20) 'green
+        Case TMode
+            ShadowCubes_cubeColor = RGB(139, 101, 8) 'purple
+        Case LeftSevenMode
+            ShadowCubes_cubeColor = RGB(205, 155, 29)     'orange
+        Case RightSevenMode
+            ShadowCubes_cubeColor = RGB(147, 112, 219) 'blue
+    End Select
+    ShadowCubes_cubeColor = NowCubesColor
     For i = 0 To 3
         X1 = ShadowCubes_X(i) * Cell
         X2 = X1 + Cell
         Y1 = ShadowCubes_Y(i) * Cell
         Y2 = Y1 + Cell
-        Me.Line (X1, Y1)-(X2, Y2), NowCubesColor, B
+        Me.Line (X1, Y1)-(X2, Y2), vbBlack, B
     Next
 End Sub
+
+'画出当前得分
+Private Sub DrawScore()
+    Score_X = 12
+    Score_Y = 5
+    Me.CurrentX = Score_X * Cell
+    Me.CurrentY = Score_Y * Cell
+    Me.Print "得分：" + Str(Score) + "分"
+End Sub
+
 '获得当前方块的颜色
 Private Function NowCubesColor() As Long
     Dim ModeColor  As Long
     Select Case NowCubes_Mode
         Case CubeMode
             ModeColor = RGB(255, 174, 0) 'yellow
-        Case LineMode
+        Case linemode
             ModeColor = RGB(47, 155, 255) 'skyblue
         Case LeftZMode
             ModeColor = RGB(222, 41, 44) 'red
@@ -1004,6 +1048,8 @@ Private Function NowCubesColor() As Long
     End Select
     NowCubesColor = ModeColor
 End Function
+
+
 '删除方块
 Private Function ClsOldCubes()
     Dim i As Integer
